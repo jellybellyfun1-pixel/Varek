@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VAREK - The Corpse City</title>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #110d07;
+    --ink-mid: #1c1409;
+    --parchment: #ede3c8;
+    --parchment-mid: #dfd0a8;
+    --parchment-dark: #c9b882;
+    --parchment-shadow: #b09a60;
+    --blood: #7a1f1f;
+    --blood-bright: #b03030;
+    --gold: #8a6a1f;
+    --gold-bright: #c9962a;
+    --gold-dim: rgba(138,106,31,0.35);
+    --ash: #6b6254;
+    --dim: #3d3428;
+    --text-primary: #221609;
+    --text-secondary: #4a3a22;
+    --text-dim: #7a6a4a;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    background: var(--ink);
+    font-family: 'Crimson Text', Georgia, serif;
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9000;
+    opacity: 0.35;
+  }
+
+  /* ===== INTRO SCREEN ===== */
+  #intro-screen {
+    position: fixed; inset: 0;
+    background: var(--ink);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 500; padding: 40px 24px; text-align: center;
+    transition: opacity 0.9s ease;
+    overflow-y: auto;
+  }
+  #intro-screen.hidden { opacity: 0; pointer-events: none; }
+
+  .intro-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(2rem, 6vw, 3.8rem);
+    color: var(--gold-bright);
+    letter-spacing: 0.25em;
+    text-shadow: 0 0 80px rgba(201,150,42,0.5), 0 0 20px rgba(201,150,42,0.2);
+    margin-bottom: 4px;
+    line-height: 1;
+  }
+  .intro-subtitle {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    color: var(--ash);
+    font-size: 1.05rem;
+    letter-spacing: 0.1em;
+    margin-bottom: 36px;
+  }
+  .intro-rule {
+    width: 280px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 0 auto 36px;
+  }
+
+  .intro-lore {
+    max-width: 520px;
+    font-family: 'Crimson Text', serif;
+    font-size: 1.1rem;
+    line-height: 1.9;
+    color: var(--parchment-mid);
+    margin-bottom: 40px;
+    text-align: left;
+    border-left: 2px solid var(--blood);
+    padding-left: 22px;
+  }
+  .intro-lore em { color: var(--gold-bright); font-style: italic; }
+
+  .model-config {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 5px; margin-bottom: 18px; width: 100%; max-width: 340px;
+  }
+  .config-label {
+    font-family: 'IM Fell English', serif; font-style: italic;
+    font-size: 0.78rem; color: var(--ash);
+  }
+  .config-input {
+    width: 100%;
+    background: rgba(240,230,200,0.05);
+    border: 1px solid var(--gold-dim);
+    color: var(--parchment);
+    font-family: 'Crimson Text', serif;
+    font-size: 0.95rem;
+    padding: 8px 14px;
+    outline: none;
+    text-align: center;
+  }
+  .config-input:focus { border-color: var(--gold); }
+  .config-input::placeholder { color: var(--ash); font-style: italic; }
+
+  .char-create {
+    width: 100%; max-width: 480px;
+    border: 1px solid var(--gold-dim);
+    padding: 26px;
+    margin-bottom: 28px;
+    background: rgba(17,13,7,0.7);
+  }
+  .char-create-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 0.75rem;
+    color: var(--gold);
+    letter-spacing: 0.2em;
+    text-align: center;
+    margin-bottom: 22px;
+    text-transform: uppercase;
+  }
+  .field-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+  .field-row { display: flex; gap: 12px; }
+  .field-row .field-group { flex: 1; }
+  .field-label {
+    font-family: 'IM Fell English', serif; font-style: italic;
+    font-size: 0.78rem; color: var(--ash);
+  }
+  .field-input {
+    background: rgba(240,230,200,0.05);
+    border: 1px solid var(--gold-dim);
+    color: var(--parchment);
+    font-family: 'Crimson Text', serif;
+    font-size: 0.98rem;
+    padding: 8px 12px;
+    outline: none; width: 100%;
+  }
+  .field-input:focus { border-color: var(--gold); background: rgba(240,230,200,0.08); }
+  .field-input::placeholder { color: var(--ash); font-style: italic; }
+  textarea.field-input { resize: vertical; min-height: 64px; line-height: 1.5; }
+  select.field-input { cursor: pointer; }
+  select.field-input option { background: #1c1409; color: var(--parchment); }
+
+  .field-hint { font-size: 0.72rem; color: var(--dim); font-family: 'IM Fell English', serif; font-style: italic; }
+  .field-error { color: var(--blood-bright); font-family: 'IM Fell English', serif; font-style: italic; font-size: 0.78rem; display: none; }
+  .field-error.visible { display: block; }
+
+  .intro-buttons { display: flex; gap: 12px; align-items: center; flex-direction: column; }
+  .start-btn {
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold-bright);
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.2em;
+    padding: 14px 48px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .start-btn:hover {
+    background: rgba(138,106,31,0.12);
+    box-shadow: 0 0 40px rgba(201,150,42,0.18);
+    letter-spacing: 0.3em;
+  }
+  .load-btn {
+    font-size: 0.75rem;
+    padding: 10px 32px;
+    border-color: rgba(138,106,31,0.35);
+    color: var(--ash);
+    cursor: pointer;
+  }
+  .load-btn:hover { color: var(--parchment-mid); border-color: var(--gold-dim); }
+
+  /* ===== MAIN GAME ===== */
+  #app {
+    width: 100%;
+    max-width: 1200px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 0 12px 12px;
+    opacity: 0;
+    transition: opacity 0.9s ease;
+  }
+
+  /* Header */
+  .game-header {
+    text-align: center;
+    padding: 14px 20px 10px;
+    flex-shrink: 0;
+  }
+  .game-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(1.2rem, 3vw, 1.9rem);
+    color: var(--gold-bright);
+    letter-spacing: 0.2em;
+    text-shadow: 0 0 40px rgba(201,150,42,0.35);
+  }
+  .game-subtitle {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    color: var(--ash);
+    font-size: 0.85rem;
+    margin-top: 2px;
+    letter-spacing: 0.06em;
+  }
+  .title-divider {
+    width: 160px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 8px auto 6px;
+  }
+  .model-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 10px;
+    border: 1px solid rgba(138,106,31,0.25);
+    border-radius: 20px;
+    font-family: 'IM Fell English', serif; font-style: italic;
+    font-size: 0.72rem; color: var(--ash);
+  }
+  .model-badge .dot { width: 5px; height: 5px; border-radius: 50%; background: #5a8a3a; }
+
+  /* Status bar */
+  .status-bar {
+    display: flex; gap: 8px;
+    padding: 7px 14px;
+    background: rgba(17,13,7,0.9);
+    border: 1px solid var(--gold-dim);
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .status-item {
+    font-family: 'IM Fell English', serif;
+    font-size: 0.76rem; color: var(--text-dim);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .status-item span { color: var(--gold-bright); font-style: italic; transition: color 0.4s; }
+  .status-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--blood); flex-shrink: 0; }
+  .status-sep { color: var(--dim); font-size: 0.6rem; }
+  .status-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .status-turn { font-family: 'IM Fell English', serif; font-style: italic; font-size: 0.7rem; color: var(--dim); }
+  .status-save-btn {
+    background: transparent;
+    border: 1px solid rgba(138,106,31,0.25);
+    color: var(--ash);
+    font-family: 'IM Fell English', serif; font-style: italic;
+    font-size: 0.72rem;
+    padding: 3px 11px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .status-save-btn:hover { border-color: var(--gold); color: var(--gold-bright); }
+
+  /* ===== GAME BODY ===== */
+  .game-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+    overflow: hidden;
+  }
+
+  /* Portrait sidebar */
+  .portrait-panel {
+    width: 200px;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    scrollbar-width: thin;
+    scrollbar-color: var(--gold-dim) transparent;
+  }
+  .portrait-panel::-webkit-scrollbar { width: 4px; }
+  .portrait-panel::-webkit-scrollbar-thumb { background: var(--gold-dim); }
+  .portrait-panel.visible { opacity: 1; transform: translateX(0); }
+
+  .portrait-card {
+    background: rgba(17,13,7,0.95);
+    border: 1px solid rgba(138,106,31,0.2);
+    overflow: hidden;
+    animation: fadeInUp 0.5s ease forwards;
+    opacity: 0;
+    flex-shrink: 0;
+  }
+  .portrait-card.primary { border-color: rgba(138,106,31,0.5); box-shadow: 0 0 20px rgba(138,106,31,0.1); }
+
+  .portrait-card .p-img-wrap { width: 100%; overflow: hidden; background: #0d0906; }
+  .portrait-card .p-img-wrap img { width: 100%; display: block; object-fit: cover; object-position: top; filter: sepia(0.15) contrast(1.05); }
+  .portrait-card.primary .p-img-wrap.bust img     { height: 260px; }
+  .portrait-card.primary .p-img-wrap.fullbody img { height: 340px; }
+  .portrait-card:not(.primary) .p-img-wrap.bust img     { height: 130px; }
+  .portrait-card:not(.primary) .p-img-wrap.fullbody img { height: 160px; }
+
+  .portrait-card .p-info {
+    padding: 8px 10px;
+    border-top: 1px solid rgba(138,106,31,0.18);
+    background: linear-gradient(to bottom, rgba(17,13,7,0.6), rgba(17,13,7,0.95));
+  }
+  .portrait-card .p-name {
+    font-family: 'IM Fell English', serif;
+    font-size: 0.88rem; color: var(--gold-bright);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .portrait-card .p-sub {
+    font-family: 'IM Fell English', serif; font-style: italic;
+    font-size: 0.68rem; color: var(--ash); margin-top: 1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .portrait-card:not(.primary) .p-info { padding: 5px 8px; }
+  .portrait-card:not(.primary) .p-name { font-size: 0.78rem; }
+  .portrait-card:not(.primary) .p-sub  { font-size: 0.62rem; }
+
+  /* Narrative pane */
+  .narrative-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    background: var(--parchment);
+    border: 2px solid var(--parchment-shadow);
+    position: relative;
+    box-shadow:
+      0 0 0 1px rgba(138,106,31,0.15),
+      0 6px 32px rgba(0,0,0,0.8),
+      inset 0 0 80px rgba(200,170,100,0.12);
+  }
+
+  /* Parchment texture vignette */
+  .narrative-pane::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse at 0% 0%,   rgba(180,150,80,0.18) 0%, transparent 45%),
+      radial-gradient(ellipse at 100% 100%, rgba(160,130,60,0.14) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 50%,  transparent 60%, rgba(100,80,40,0.06) 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Corner ornaments */
+  .corner-decor { position: absolute; width: 20px; height: 20px; z-index: 2; opacity: 0.5; }
+  .corner-decor.tl { top: 7px;  left: 7px;  border-top: 1px solid var(--gold); border-left: 1px solid var(--gold); }
+  .corner-decor.tr { top: 7px;  right: 7px; border-top: 1px solid var(--gold); border-right: 1px solid var(--gold); }
+  .corner-decor.bl { bottom: 7px; left: 7px;  border-bottom: 1px solid var(--gold); border-left: 1px solid var(--gold); }
+  .corner-decor.br { bottom: 7px; right: 7px; border-bottom: 1px solid var(--gold); border-right: 1px solid var(--gold); }
+
+  /* Narrative scroll area */
+  .narrative-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 32px 40px 24px;
+    position: relative;
+    z-index: 2;
+    scroll-behavior: smooth;
+  }
+  .narrative-content::-webkit-scrollbar { width: 5px; }
+  .narrative-content::-webkit-scrollbar-track { background: var(--parchment-mid); }
+  .narrative-content::-webkit-scrollbar-thumb { background: var(--parchment-shadow); border-radius: 3px; }
+
+  /* Scene blocks */
+  .scene-block {
+    margin-bottom: 22px;
+    animation: fadeInUp 0.55s ease forwards;
+    opacity: 0;
+  }
+  .scene-block.player-action {
+    border-left: 2px solid var(--blood);
+    padding-left: 16px;
+    margin-left: 6px;
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .scene-divider {
+    text-align: center;
+    margin: 26px 0;
+    opacity: 0.35;
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 0.65rem;
+    color: var(--gold);
+    letter-spacing: 0.35em;
+  }
+
+  .scene-label {
+    font-family: 'IM Fell English', serif;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    margin-bottom: 5px;
+  }
+
+  .scene-text {
+    font-size: 1.08rem;
+    line-height: 1.92;
+    color: var(--text-primary);
+  }
+  .scene-text p { margin-bottom: 16px; }
+  .scene-text p:last-child { margin-bottom: 0; }
+  .scene-text em { color: var(--blood); font-style: italic; }
+  .scene-text strong { color: var(--dim); font-weight: 600; }
+
+  /* Streaming block — shown while tokens arrive */
+  .scene-block.streaming {
+    opacity: 1;
+    animation: none;
+  }
+  .stream-text {
+    font-size: 1.08rem;
+    line-height: 1.92;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+  }
+  .stream-text::after {
+    content: '\25AE';
+    animation: blink 0.7s step-end infinite;
+    color: var(--gold);
+    font-size: 0.85em;
+    margin-left: 1px;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+  }
+
+  /* Drop cap on very first narrative paragraph */
+  .scene-block:first-child .scene-text p:first-child::first-letter {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 3em;
+    line-height: 0.75;
+    float: left;
+    margin: 4px 6px 0 0;
+    color: var(--gold);
+  }
+
+  .player-text {
+    font-size: 0.98rem;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+
+  .familiar-announce {
+    background: rgba(138,106,31,0.1);
+    border: 1px solid var(--gold);
+    padding: 12px 18px;
+    margin-bottom: 18px;
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    color: var(--gold-bright);
+    font-size: 0.95rem;
+    text-align: center;
+    animation: fadeInUp 0.8s ease forwards;
+    opacity: 0;
+    letter-spacing: 0.04em;
+  }
+
+  .ooc-block {
+    margin: 14px 0;
+    padding: 14px 18px;
+    border: 1px solid rgba(138,106,31,0.5);
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--parchment-mid);
+    background: rgba(40,28,10,0.92);
+    line-height: 1.65;
+  }
+  .ooc-label {
+    color: var(--gold);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    display: block;
+    margin-bottom: 4px;
+    font-style: normal;
+  }
+
+  /* Loading */
+  .loading-indicator {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 0;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .loading-indicator.visible { opacity: 1; }
+  .loading-dots { display: flex; gap: 4px; }
+  .loading-dots span {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--gold);
+    animation: dotPulse 1.4s infinite ease-in-out;
+  }
+  .loading-dots span:nth-child(2) { animation-delay: 0.22s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.44s; }
+  @keyframes dotPulse {
+    0%, 80%, 100% { opacity: 0.2; transform: scale(0.75); }
+    40%           { opacity: 1;   transform: scale(1); }
+  }
+  .loading-text {
+    font-family: 'IM Fell English', serif; font-style: italic;
+    font-size: 0.88rem; color: var(--text-dim);
+  }
+
+  /* Action panel */
+  .action-panel {
+    flex-shrink: 0;
+    background: rgba(17,13,7,0.97);
+    border: 1px solid var(--gold-dim);
+    border-top: none;
+    padding: 12px 20px 14px;
+    position: relative;
+    z-index: 2;
+  }
+  .action-label {
+    font-family: 'IM Fell English', serif;
+    font-size: 0.72rem; color: var(--ash);
+    text-transform: uppercase; letter-spacing: 0.16em;
+    margin-bottom: 8px;
+  }
+  .action-row { display: flex; gap: 7px; align-items: stretch; }
+  .action-input {
+    flex: 1;
+    background: rgba(240,230,200,0.06);
+    border: 1px solid rgba(138,106,31,0.3);
+    color: var(--parchment);
+    font-family: 'Crimson Text', serif;
+    font-size: 1.05rem;
+    padding: 9px 14px;
+    outline: none;
+    font-style: italic;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .action-input:focus {
+    border-color: var(--gold);
+    background: rgba(240,230,200,0.09);
+  }
+  .action-input::placeholder { color: var(--ash); }
+  .action-input:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .action-submit {
+    background: rgba(138,106,31,0.18);
+    border: 1px solid var(--gold);
+    color: var(--gold-bright);
+    font-family: 'IM Fell English', serif; font-style: italic;
+    font-size: 0.95rem;
+    padding: 9px 22px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    letter-spacing: 0.03em;
+  }
+  .action-submit:hover:not(:disabled) {
+    background: rgba(138,106,31,0.32);
+    box-shadow: 0 0 16px rgba(201,150,42,0.15);
+  }
+  .action-submit:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .action-footer {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 7px; min-height: 22px;
+  }
+  .char-counter {
+    font-family: 'IM Fell English', serif; font-style: italic;
+    font-size: 0.68rem; color: var(--dim); margin-left: auto;
+  }
+  .char-counter.warn { color: var(--blood); }
+
+  .error-msg {
+    font-family: 'IM Fell English', serif; font-style: italic;
+    color: var(--blood-bright); font-size: 0.85rem;
+    display: none; flex: 1;
+  }
+  .error-msg.visible { display: block; }
+  .retry-btn {
+    display: none;
+    background: transparent;
+    border: 1px solid var(--blood);
+    color: var(--blood-bright);
+    font-family: 'IM Fell English', serif; font-style: italic;
+    font-size: 0.75rem;
+    padding: 3px 11px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .retry-btn.visible { display: block; }
+  .retry-btn:hover { background: rgba(122,31,31,0.15); }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 300;
+    display: none; align-items: center; justify-content: center;
+  }
+  .modal-overlay.visible { display: flex; }
+  .modal {
+    background: var(--ink-mid);
+    border: 1px solid rgba(138,106,31,0.4);
+    padding: 32px;
+    max-width: 420px; width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+  }
+  .modal-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 0.9rem; color: var(--gold-bright);
+    letter-spacing: 0.12em; margin-bottom: 6px; text-align: center;
+  }
+  .modal-rule {
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+    margin-bottom: 20px;
+  }
+  .modal-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(138,106,31,0.28);
+    color: var(--parchment-mid);
+    font-family: 'Crimson Text', serif;
+    font-size: 1rem;
+    padding: 10px 16px;
+    cursor: pointer; transition: all 0.2s;
+    margin-bottom: 9px;
+    text-align: left;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .modal-btn:hover { border-color: var(--gold); background: rgba(138,106,31,0.1); color: var(--parchment); }
+  .modal-btn-icon { color: var(--gold); font-size: 1rem; }
+  .modal-note {
+    font-family: 'IM Fell English', serif; font-style: italic;
+    font-size: 0.76rem; color: var(--dim);
+    margin-bottom: 16px; text-align: center;
+  }
+  .modal-close {
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(90,74,50,0.25);
+    color: var(--ash);
+    font-family: 'IM Fell English', serif; font-style: italic;
+    font-size: 0.82rem; padding: 8px;
+    cursor: pointer; transition: all 0.2s; margin-top: 4px;
+  }
+  .modal-close:hover { border-color: var(--ash); color: var(--parchment-mid); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 700px) {
+    .portrait-panel {
+      width: 100%; min-width: unset;
+      flex-direction: row; flex-wrap: nowrap;
+      overflow-x: auto; overflow-y: hidden;
+      max-height: 160px;
+    }
+    .portrait-card { flex-shrink: 0; width: 110px; }
+    .portrait-card.primary .p-img-wrap.bust img,
+    .portrait-card:not(.primary) .p-img-wrap.bust img { height: 110px; }
+    .portrait-card.primary .p-img-wrap.fullbody img,
+    .portrait-card:not(.primary) .p-img-wrap.fullbody img { height: 110px; }
+    .game-body { flex-direction: column; }
+    .narrative-content { padding: 20px 22px 16px; }
+    .action-panel { padding: 10px 14px 12px; }
+    .game-header { padding: 10px 12px 6px; }
+    #app { padding: 0 6px 8px; }
+  }
+
+  @media (max-width: 480px) {
+    .status-bar { gap: 5px; padding: 6px 10px; }
+    .status-sep { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Intro -->
+<div id="intro-screen">
+  <div class="intro-title">VAREK</div>
+  <div class="intro-subtitle">The Corpse City</div>
+  <div class="intro-rule"></div>
+
+  <div class="intro-lore">
+    Somewhere beneath the cobblestones of <em>Varek</em>, a god is decomposing.<br><br>
+    No one remembers its name. The priests have forgotten what they're priests of. The temple is now a tax office. The god's last miracle — keeping the city standing — continues out of sheer momentum, the way a decapitated man might walk three steps before noticing.<br><br>
+    You are nobody in particular. That may change.
+  </div>
+
+  <div class="char-create">
+    <div class="char-create-title">Who Are You?</div>
+
+    <div class="model-config">
+      <div class="config-label">Ollama model</div>
+      <input type="text" class="config-input" id="model-input" placeholder="varek-gemma3" value="varek-gemma3" />
+    </div>
+
+    <div class="field-row">
+      <div class="field-group">
+        <div class="field-label">Name</div>
+        <input type="text" class="field-input" id="char-name" placeholder="Your name..." maxlength="40" />
+        <div class="field-error" id="err-name">A name is required.</div>
+      </div>
+      <div class="field-group" style="max-width:90px">
+        <div class="field-label">Age</div>
+        <input type="number" class="field-input" id="char-age" placeholder="25" min="16" max="80" />
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">Gender</div>
+      <select class="field-input" id="char-gender">
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">Appearance</div>
+      <textarea class="field-input" id="char-appearance" placeholder="Tall, dark hair, a scar above the left eye..." maxlength="200"></textarea>
+      <div class="field-hint">The city will notice.</div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">Background</div>
+      <select class="field-input" id="char-background">
+        <option value="A debtor hiding from creditors">Debtor — hiding from creditors</option>
+        <option value="A minor functionary between postings">Minor Functionary — between postings</option>
+        <option value="A stranger newly arrived in Varek">Stranger — newly arrived in Varek</option>
+        <option value="A disgraced guard seeking redemption or at least employment">Disgraced Guard — seeking redemption</option>
+        <option value="A failed merchant with nothing left to lose">Failed Merchant — nothing left to lose</option>
+        <option value="A scholar chasing something that probably doesn't exist">Scholar — chasing something that probably doesn't exist</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="intro-buttons">
+    <button class="start-btn" onclick="startGame()">Enter Varek</button>
+    <label for="load-file-input-intro" class="start-btn load-btn">Load Saved Game</label>
+    <input type="file" id="load-file-input-intro" accept=".json" style="display:none" onchange="loadGame(event, true)" />
+  </div>
+</div>
+
+<!-- Hidden load input (used from modal) -->
+<input type="file" id="load-file-input" accept=".json" style="display:none" onchange="loadGame(event, false)" />
+
+<!-- Save/Load Modal -->
+<div class="modal-overlay" id="save-modal" onclick="handleModalOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-title">Save &amp; Load</div>
+    <div class="modal-rule"></div>
+    <div class="modal-note">Save files are downloaded to your device.</div>
+    <button class="modal-btn" onclick="saveGame()">
+      <span class="modal-btn-icon">&#8659;</span> Save Current Game
+    </button>
+    <label for="load-file-input" class="modal-btn" style="cursor:pointer;">
+      <span class="modal-btn-icon">&#8657;</span> Load Saved Game
+    </label>
+    <button class="modal-close" onclick="closeSaveModal()">Close</button>
+  </div>
+</div>
+
+<!-- Main Game -->
+<div id="app">
+  <div class="game-header">
+    <div class="game-title">VAREK</div>
+    <div class="game-subtitle">The Corpse City</div>
+    <div class="title-divider"></div>
+    <div class="model-badge">
+      <div class="dot"></div>
+      <span id="model-label">Ollama</span>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-item">
+      <div class="status-dot"></div>
+      Location:&nbsp;<span id="status-location">Unknown</span>
+    </div>
+    <span class="status-sep">|</span>
+    <div class="status-item">
+      <div class="status-dot"></div>
+      Time:&nbsp;<span id="status-time">Dawn</span>
+    </div>
+    <span class="status-sep">|</span>
+    <div class="status-item">
+      <div class="status-dot"></div>
+      <span id="status-role">Nobody</span>
+    </div>
+    <div class="status-right">
+      <span class="status-turn" id="status-turn"></span>
+      <button class="status-save-btn" onclick="openSaveModal()">Save / Load</button>
+    </div>
+  </div>
+
+  <div class="game-body">
+    <div class="portrait-panel" id="portrait-panel"></div>
+
+    <div class="narrative-pane">
+      <div class="corner-decor tl"></div>
+      <div class="corner-decor tr"></div>
+      <div class="corner-decor bl"></div>
+      <div class="corner-decor br"></div>
+
+      <div class="narrative-content" id="narrative-content">
+        <div class="loading-indicator visible" id="initial-loader">
+          <div class="loading-dots"><span></span><span></span><span></span></div>
+          <div class="loading-text">The city stirs...</div>
+        </div>
+      </div>
+
+      <div class="action-panel">
+        <div class="action-label">What do you do?</div>
+        <div class="action-row">
+          <input
+            type="text"
+            class="action-input"
+            id="action-input"
+            placeholder="Describe your action..."
+            maxlength="1000"
+            oninput="updateCharCounter()"
+          />
+          <button class="action-submit" id="action-submit" onclick="submitAction()">Act</button>
+        </div>
+        <div class="action-footer">
+          <div class="error-msg" id="error-msg"></div>
+          <button class="retry-btn" id="retry-btn" onclick="retryLast()">Try again</button>
+          <span class="char-counter" id="char-counter"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+let conversationHistory = [];
+let narrativeLog = [];  // {type, text?, who?} — used for clean save/load
+let isLoading = false;
+let ollamaModel = 'varek-gemma3';
+let playerData = {};
+let familiarBonded = null;
+let currentCharacters = [];
+let turnNumber = 0;
+let lastPlayerMessage = null;
+let lastDisplayMessage = null;
+
+const LOADING_MESSAGES = [
+  'The city considers...',
+  'Something stirs beneath the cobblestones...',
+  'The dead are filing paperwork...',
+  'A raven watches...',
+  'The god shifts in its sleep...',
+  'Ink dries on a map that was accurate a moment ago...',
+  'The Sump gurgles thoughtfully...',
+  'A miracle happens. Nobody notices...',
+  'The tax office processes a complaint...',
+  'Somewhere, a priest forgets what he believes...',
+  'The Cartographer draws a street that wasn\'t there yesterday...',
+  'Form stares at something only Form can see...',
+];
+
+// ===== START GAME =====
+function startGame() {
+  const nameEl = document.getElementById('char-name');
+  const name = nameEl.value.trim();
+  if (!name) {
+    document.getElementById('err-name').classList.add('visible');
+    nameEl.focus();
+    return;
+  }
+  document.getElementById('err-name').classList.remove('visible');
+
+  playerData = {
+    name,
+    age:        document.getElementById('char-age').value || '??',
+    gender:     document.getElementById('char-gender').value,
+    appearance: document.getElementById('char-appearance').value.trim() || 'Unremarkable looking',
+    background: document.getElementById('char-background').value,
+  };
+
+  ollamaModel = document.getElementById('model-input').value.trim() || 'varek-gemma3';
+  document.getElementById('model-label').textContent = ollamaModel;
+
+  document.getElementById('intro-screen').classList.add('hidden');
+  document.getElementById('app').style.opacity = '1';
+
+  sendToNarrator(
+    `Begin the story. The player character is ${playerData.name}, ${playerData.age} years old, ${playerData.gender}. ` +
+    `Appearance: ${playerData.appearance}. Background: ${playerData.background}. ` +
+    `Place them somewhere in Varek at dawn. Something small but wrong is already happening.`
+  );
+}
+
+// ===== NARRATION =====
+async function sendToNarrator(userMessage, displayMessage = null) {
+  if (isLoading) return;
+  isLoading = true;
+  setInputDisabled(true);
+  hideError();
+
+  if (displayMessage && conversationHistory.length > 0) {
+    logDivider();
+    logPlayer(displayMessage);
+  }
+
+  lastPlayerMessage = userMessage;
+  lastDisplayMessage = displayMessage;
+  conversationHistory.push({ role: 'user', content: userMessage });
+
+  // Create a live streaming block so text appears as it generates
+  const content = document.getElementById('narrative-content');
+  document.getElementById('initial-loader')?.remove();
+  document.getElementById('turn-loader')?.remove();
+
+  const streamBlock = document.createElement('div');
+  streamBlock.className = 'scene-block streaming';
+  const streamText = document.createElement('div');
+  streamText.className = 'stream-text';
+  streamBlock.appendChild(streamText);
+  content.appendChild(streamBlock);
+  content.scrollTop = content.scrollHeight;
+
+  let streamedText = '';
+  let success = false;
+
+  try {
+    const resp = await fetch('/api/narrate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages:        conversationHistory,
+        model:           ollamaModel,
+        player:          playerData,
+        currentLocation: document.getElementById('status-location').textContent,
+        currentTime:     document.getElementById('status-time').textContent,
+        currentRole:     document.getElementById('status-role').textContent,
+        turnNumber,
+      }),
+    });
+
+    if (!resp.ok) {
+      throw new Error(`Server error ${resp.status}`);
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let data;
+        try { data = JSON.parse(line.slice(6)); } catch { continue; }
+
+        if (data.type === 'token') {
+          streamedText += data.text;
+          streamText.textContent = streamedText;
+          content.scrollTop = content.scrollHeight;
+        } else if (data.type === 'done') {
+          // Swap the raw stream block for the properly formatted narrative
+          streamBlock.remove();
+          conversationHistory.push({ role: 'assistant', content: JSON.stringify(data) });
+          turnNumber++;
+          handleParsedResponse(data);
+          updateTurnDisplay();
+          success = true;
+        } else if (data.type === 'error') {
+          throw new Error(data.message || 'The city does not respond.');
+        }
+      }
+    }
+
+    if (!success) throw new Error('The city does not respond.');
+
+  } catch (err) {
+    streamBlock.remove();
+    showError(err.message || 'The city does not respond.');
+    conversationHistory.pop();
+    // Roll back the log entries added before the failed request
+    if (displayMessage && narrativeLog.length >= 2) {
+      const last = narrativeLog[narrativeLog.length - 1];
+      const secondLast = narrativeLog[narrativeLog.length - 2];
+      if (last.type === 'player' && secondLast.type === 'divider') {
+        narrativeLog.splice(-2, 2);
+      } else if (last.type === 'player') {
+        narrativeLog.pop();
+      }
+    }
+    console.error(err);
+  } finally {
+    isLoading = false;
+    setInputDisabled(false);
+    document.getElementById('action-input').focus();
+  }
+}
+
+function retryLast() {
+  if (!lastPlayerMessage) return;
+  hideError();
+  sendToNarrator(lastPlayerMessage, lastDisplayMessage);
+}
+
+// ===== NARRATIVE LOG — log-and-render helpers =====
+function logDivider() {
+  narrativeLog.push({ type: 'divider' });
+  addSceneDivider();
+}
+
+function logPlayer(text) {
+  narrativeLog.push({ type: 'player', text });
+  addPlayerBlock(text);
+}
+
+function logNarrative(text) {
+  narrativeLog.push({ type: 'narrative', text });
+  addNarrativeBlock(text);
+}
+
+function logBond(who) {
+  narrativeLog.push({ type: 'bond', who });
+  showFamiliarBond(who);
+}
+
+function logAbandoned(who) {
+  narrativeLog.push({ type: 'abandoned', who });
+  showFamiliarAbandoned(who);
+}
+
+function logOOC(text) {
+  narrativeLog.push({ type: 'ooc', text });
+  showOOCMessage(text);
+}
+
+// ===== PORTRAITS =====
+let portraitMeta = null;
+
+async function fetchPortraitMeta() {
+  if (portraitMeta) return portraitMeta;
+  try {
+    const r = await fetch('/api/portraits');
+    portraitMeta = await r.json();
+  } catch (e) {
+    portraitMeta = {};
+  }
+  return portraitMeta;
+}
+
+async function updatePortraits(characterIds) {
+  if (!characterIds || !characterIds.length) {
+    const panel = document.getElementById('portrait-panel');
+    panel.classList.remove('visible');
+    panel.innerHTML = '';
+    currentCharacters = [];
+    return;
+  }
+
+  // Resolve familiar swaps based on bond state
+  const resolved = characterIds.map(id => {
+    if (familiarBonded === 'delea' && id === 'delea_street') return 'delea_familiar';
+    if (familiarBonded === 'olver' && id === 'olver_street') return 'olver_familiar';
+    return id;
+  });
+
+  const unique = [...new Set(resolved)];
+
+  // Skip re-render if the set hasn't changed
+  if (unique.length === currentCharacters.length && unique.every((c, i) => c === currentCharacters[i])) return;
+  currentCharacters = unique;
+
+  const meta = await fetchPortraitMeta();
+  const panel = document.getElementById('portrait-panel');
+  panel.innerHTML = '';
+
+  let hasAny = false;
+  unique.forEach((charId, idx) => {
+    const m = meta[charId];
+    if (!m) return;
+    hasAny = true;
+
+    const card = document.createElement('div');
+    card.className = idx === 0 ? 'portrait-card primary' : 'portrait-card';
+    card.style.animationDelay = `${idx * 0.14}s`;
+
+    const nameEsc  = escapeHtml(m.title);
+    const subEsc   = escapeHtml(m.subtitle);
+    const idEsc    = escapeHtml(charId);
+    const typeEsc  = escapeHtml(m.type);
+
+    card.innerHTML =
+      `<div class="p-img-wrap ${typeEsc}">` +
+        `<img src="/api/portrait/${idEsc}" alt="${nameEsc}" loading="lazy" />` +
+      `</div>` +
+      `<div class="p-info">` +
+        `<div class="p-name">${nameEsc}</div>` +
+        `<div class="p-sub">${subEsc}</div>` +
+      `</div>`;
+
+    panel.appendChild(card);
+  });
+
+  panel.classList.toggle('visible', hasAny);
+}
+
+// ===== FAMILIAR =====
+function showFamiliarBond(who) {
+  const content = document.getElementById('narrative-content');
+  const el = document.createElement('div');
+  el.className = 'familiar-announce';
+  el.textContent = `${capitalise(who)} has chosen you. The bond is made.`;
+  content.appendChild(el);
+  content.scrollTop = content.scrollHeight;
+}
+
+function showFamiliarAbandoned(who) {
+  const content = document.getElementById('narrative-content');
+  const el = document.createElement('div');
+  el.className = 'familiar-announce';
+  el.style.borderColor = 'var(--blood)';
+  el.style.color = 'var(--blood-bright)';
+  el.textContent = `${capitalise(who)} is gone. The bond is broken.`;
+  content.appendChild(el);
+  content.scrollTop = content.scrollHeight;
+}
+
+function showOOCMessage(msg) {
+  const content = document.getElementById('narrative-content');
+  const el = document.createElement('div');
+  el.className = 'ooc-block';
+  el.innerHTML = `<span class="ooc-label">Narrator</span>${escapeHtml(msg)}`;
+  content.appendChild(el);
+  content.scrollTop = content.scrollHeight;
+}
+
+// ===== NARRATIVE BLOCKS =====
+function handleParsedResponse(parsed) {
+  if (parsed.familiar_bond && !familiarBonded) {
+    familiarBonded = parsed.familiar_bond;
+    logBond(familiarBonded);
+  }
+  if (parsed.familiar_abandoned) {
+    familiarBonded = null;
+    logAbandoned(parsed.familiar_abandoned);
+  }
+  if (parsed.ooc) logOOC(parsed.ooc);
+
+  updatePortraits(parsed.characters || (parsed.character ? [parsed.character] : []));
+  logNarrative(parsed.narrative);
+  updateStatus(parsed.location, parsed.time, parsed.role);
+}
+
+function addNarrativeBlock(text) {
+  const content = document.getElementById('narrative-content');
+  document.getElementById('initial-loader')?.remove();
+  const block = document.createElement('div');
+  block.className = 'scene-block';
+  block.innerHTML = `<div class="scene-text">${formatNarrative(text)}</div>`;
+  content.appendChild(block);
+  content.scrollTop = content.scrollHeight;
+}
+
+function addPlayerBlock(text) {
+  const content = document.getElementById('narrative-content');
+  const block = document.createElement('div');
+  block.className = 'scene-block player-action';
+  block.innerHTML = `<div class="scene-label">You</div><div class="player-text">${escapeHtml(text)}</div>`;
+  content.appendChild(block);
+  content.scrollTop = content.scrollHeight;
+}
+
+function addSceneDivider() {
+  const content = document.getElementById('narrative-content');
+  if (content.children.length > 0) {
+    const d = document.createElement('div');
+    d.className = 'scene-divider';
+    d.innerHTML = '&mdash;&thinsp;&bull;&thinsp;&mdash;';
+    content.appendChild(d);
+  }
+}
+
+function formatNarrative(t) {
+  if (!t) return '';
+  let s = escapeHtml(t);
+  // Markdown bold and italic
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // Split on double newlines (paragraph breaks); single newlines become <br>
+  const paras = s.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  if (paras.length === 0) return `<p>${s}</p>`;
+  return paras.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+}
+
+function escapeHtml(t) {
+  if (!t) return '';
+  return String(t)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function capitalise(s) {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
+// ===== STATUS =====
+function updateStatus(location, time, role) {
+  if (location && location !== 'Unknown' && location !== 'null' && location !== 'Varek') {
+    const el = document.getElementById('status-location');
+    if (el.textContent !== location) {
+      el.style.color = 'var(--gold-bright)';
+      el.textContent = location;
+      setTimeout(() => { el.style.color = ''; }, 1600);
+    }
+  }
+  if (time && time !== 'Unknown' && time !== 'null') {
+    const el = document.getElementById('status-time');
+    if (el.textContent !== time) {
+      el.style.color = 'var(--gold-bright)';
+      el.textContent = time;
+      setTimeout(() => { el.style.color = ''; }, 1600);
+    }
+  }
+  if (role && role !== 'null') {
+    document.getElementById('status-role').textContent = role;
+  }
+}
+
+function updateTurnDisplay() {
+  document.getElementById('status-turn').textContent = `Turn ${turnNumber}`;
+}
+
+// ===== ACTION INPUT =====
+function submitAction() {
+  const input = document.getElementById('action-input');
+  const text = input.value.trim();
+  if (!text || isLoading) return;
+  input.value = '';
+  updateCharCounter();
+  sendToNarrator(text, text);
+}
+
+function updateCharCounter() {
+  const input = document.getElementById('action-input');
+  const counter = document.getElementById('char-counter');
+  const len = input.value.length;
+  const max = parseInt(input.getAttribute('maxlength'), 10);
+  if (len > max * 0.8) {
+    counter.textContent = `${len}/${max}`;
+    counter.classList.toggle('warn', len > max * 0.95);
+  } else {
+    counter.textContent = '';
+    counter.classList.remove('warn');
+  }
+}
+
+// ===== LOADING =====
+function showLoading(show) {
+  const content = document.getElementById('narrative-content');
+  let loader = document.getElementById('turn-loader');
+  if (show) {
+    if (!loader) {
+      loader = document.createElement('div');
+      loader.id = 'turn-loader';
+      loader.className = 'loading-indicator visible';
+      const msg = LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)];
+      loader.innerHTML =
+        `<div class="loading-dots"><span></span><span></span><span></span></div>` +
+        `<div class="loading-text">${escapeHtml(msg)}</div>`;
+      content.appendChild(loader);
+      content.scrollTop = content.scrollHeight;
+    }
+  } else {
+    loader?.remove();
+  }
+}
+
+function setInputDisabled(disabled) {
+  document.getElementById('action-input').disabled  = disabled;
+  document.getElementById('action-submit').disabled = disabled;
+}
+
+// ===== ERROR =====
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.classList.add('visible');
+  document.getElementById('retry-btn').classList.add('visible');
+}
+
+function hideError() {
+  document.getElementById('error-msg').classList.remove('visible');
+  document.getElementById('retry-btn').classList.remove('visible');
+}
+
+// ===== MODAL =====
+function openSaveModal()  { document.getElementById('save-modal').classList.add('visible'); }
+function closeSaveModal() { document.getElementById('save-modal').classList.remove('visible'); }
+function handleModalOverlayClick(e) {
+  if (e.target === document.getElementById('save-modal')) closeSaveModal();
+}
+
+// ===== SAVE / LOAD =====
+function saveGame() {
+  const state = {
+    version: 5,
+    savedAt: new Date().toISOString(),
+    player: playerData,
+    ollamaModel,
+    conversationHistory,
+    narrativeLog,
+    familiarBonded,
+    currentCharacters,
+    turnNumber,
+    status: {
+      location: document.getElementById('status-location').textContent,
+      time:     document.getElementById('status-time').textContent,
+      role:     document.getElementById('status-role').textContent,
+    },
+  };
+
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `varek_${playerData.name || 'save'}_${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  closeSaveModal();
+}
+
+function loadGame(event, fromIntro) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const state = JSON.parse(e.target.result);
+      if (!state.version || !state.player) throw new Error('Invalid save file.');
+
+      playerData          = state.player;
+      ollamaModel         = state.ollamaModel || 'varek-gemma3';
+      conversationHistory = state.conversationHistory || [];
+      familiarBonded      = state.familiarBonded || null;
+      currentCharacters   = [];
+      turnNumber          = state.turnNumber ?? conversationHistory.filter(m => m.role === 'assistant').length;
+
+      document.getElementById('intro-screen').classList.add('hidden');
+      document.getElementById('app').style.opacity = '1';
+      document.getElementById('model-label').textContent = ollamaModel;
+
+      if (state.status) {
+        if (state.status.location) document.getElementById('status-location').textContent = state.status.location;
+        if (state.status.time)     document.getElementById('status-time').textContent     = state.status.time;
+        if (state.status.role)     document.getElementById('status-role').textContent     = state.status.role;
+      }
+
+      // Reconstruct display from narrativeLog (v5+) or fall back to re-parsing history (v4-)
+      const content = document.getElementById('narrative-content');
+      content.innerHTML = '';
+      document.getElementById('initial-loader')?.remove();
+
+      if (state.narrativeLog && state.narrativeLog.length > 0) {
+        // Clean reconstruction — no raw innerHTML needed
+        narrativeLog = state.narrativeLog;
+        rebuildDisplayFromLog(narrativeLog);
+      } else {
+        // Legacy fallback: re-parse conversationHistory to rebuild display
+        narrativeLog = [];
+        rebuildDisplayFromHistory(conversationHistory);
+      }
+
+      updateTurnDisplay();
+
+      // Restore portrait from last assistant message
+      const lastAsst = [...conversationHistory].reverse().find(m => m.role === 'assistant');
+      if (lastAsst) {
+        try {
+          const p = JSON.parse(lastAsst.content);
+          const chars = p.characters || (p.character ? [p.character] : []);
+          updatePortraits(chars.length ? chars : (familiarBonded ? [familiarBonded + '_familiar'] : []));
+        } catch (_) {
+          updatePortraits(familiarBonded ? [familiarBonded + '_familiar'] : []);
+        }
+      }
+
+      setTimeout(() => {
+        const nc = document.getElementById('narrative-content');
+        nc.scrollTop = nc.scrollHeight;
+        document.getElementById('action-input').focus();
+      }, 80);
+
+      if (!fromIntro) closeSaveModal();
+    } catch (err) {
+      alert('Could not load save file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function rebuildDisplayFromLog(log) {
+  // Temporarily suppress animations for bulk reconstruction
+  const style = document.createElement('style');
+  style.id = 'rebuild-no-anim';
+  style.textContent = '.scene-block,.familiar-announce,.ooc-block{animation:none!important;opacity:1!important;}';
+  document.head.appendChild(style);
+
+  for (const entry of log) {
+    switch (entry.type) {
+      case 'narrative':  addNarrativeBlock(entry.text); break;
+      case 'player':     addPlayerBlock(entry.text);    break;
+      case 'divider':    addSceneDivider();              break;
+      case 'bond':       showFamiliarBond(entry.who);   break;
+      case 'abandoned':  showFamiliarAbandoned(entry.who); break;
+      case 'ooc':        showOOCMessage(entry.text);    break;
+    }
+  }
+
+  document.getElementById('rebuild-no-anim')?.remove();
+}
+
+function rebuildDisplayFromHistory(history) {
+  // Legacy path: reconstruct narrative from raw conversation history
+  const style = document.createElement('style');
+  style.id = 'rebuild-no-anim';
+  style.textContent = '.scene-block,.familiar-announce,.ooc-block{animation:none!important;opacity:1!important;}';
+  document.head.appendChild(style);
+
+  let first = true;
+  for (const msg of history) {
+    if (msg.role === 'assistant') {
+      try {
+        const p = JSON.parse(msg.content);
+        if (p.familiar_bond && !familiarBonded) {
+          familiarBonded = p.familiar_bond;
+          const entry = { type: 'bond', who: familiarBonded };
+          narrativeLog.push(entry);
+          showFamiliarBond(familiarBonded);
+        }
+        if (p.familiar_abandoned) {
+          familiarBonded = null;
+          narrativeLog.push({ type: 'abandoned', who: p.familiar_abandoned });
+          showFamiliarAbandoned(p.familiar_abandoned);
+        }
+        if (p.narrative) {
+          narrativeLog.push({ type: 'narrative', text: p.narrative });
+          addNarrativeBlock(p.narrative);
+        }
+      } catch (_) {
+        if (msg.content) {
+          narrativeLog.push({ type: 'narrative', text: msg.content });
+          addNarrativeBlock(msg.content);
+        }
+      }
+      first = false;
+    } else if (msg.role === 'user' && !first) {
+      // User messages after the first (which is the system init) are player actions
+      // We don't have the original display text, so use the raw content
+      if (!msg.content.startsWith('Begin the story') && !msg.content.startsWith('[PREVIOUSLY')) {
+        narrativeLog.push({ type: 'divider' });
+        addSceneDivider();
+        narrativeLog.push({ type: 'player', text: msg.content });
+        addPlayerBlock(msg.content);
+      }
+    }
+  }
+
+  document.getElementById('rebuild-no-anim')?.remove();
+}
+
+// ===== KEYBOARD =====
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('action-input');
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      submitAction();
+    }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeSaveModal();
+  });
+});
+</script>
+</body>
+</html>
